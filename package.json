@@ -1,0 +1,63 @@
+{
+  "name": "react-image-viewers",
+  "version": "1.0.0",
+  "description": "a native js imageViewerUtil and react image viewer",
+  "main": "lib/cjs/index.js",
+  "module": "lib/esm/index.js",
+  "brower": "dist/umd/index.js",
+  "typing": "typings/index.d.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dist": "rollup -c",
+    "build": "yarn && yarn dist"
+  },
+  "author": "yc.tao",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/qingniaofly/react-image-viewer.git"
+  },
+  "keywords": [
+    "react",
+    "react-component",
+    "image",
+    "react-image",
+    "preview-image",
+    "image-viewer",
+    "react-image-viewer",
+    "imageViewerUtil"
+  ],
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/qingniaofly/react-image-viewer/issues"
+  },
+  "files":[
+    "/dist",
+    "/lib",
+    "/typings/index.d.ts"
+  ],
+  "devDependencies": {
+    "@babel/core": "^7.18.9",
+    "@babel/plugin-transform-runtime": "^7.18.9",
+    "@babel/preset-env": "^7.18.9",
+    "@babel/preset-react": "^7.18.6",
+    "@babel/preset-typescript": "^7.18.6",
+    "postcss": "^8.4.14",
+    "rollup": "^2.77.0",
+    "rollup-plugin-babel": "^4.4.0",
+    "rollup-plugin-commonjs": "^10.1.0",
+    "rollup-plugin-dts": "^4.2.2",
+    "rollup-plugin-node-resolve": "^5.2.0",
+    "rollup-plugin-peer-deps-external": "^2.2.4",
+    "rollup-plugin-postcss": "^4.0.2",
+    "rollup-plugin-typescript": "^1.0.1",
+    "sass": "^1.54.0",
+    "tslib": "^2.4.0",
+    "typescript": "^4.6.3",
+    "react": "18.0.0",
+    "react-dom": "^18.0.0"
+  },
+  "peerDependencies": {
+    "react": "^16.8.0 || ^17 || ^18",
+    "react-dom": "^16.8.0 || ^17 || ^18"
+  }
+}

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>react-popper</title>
+        <style>
+            html,
+            body {
+                width: 100%;
+                height: 100%;
+            }
+            .react-image-viewer-container {
+                width: 100%;
+                height: 100%;
+                display: -webkit-box;
+                display: -moz-box;
+                display: -ms-flexbox;
+                display: -moz-flex;
+                display: flex;
+                -webkit-box-orient: horizontal;
+                -webkit-box-pack: center;
+                position: relative;
+                overflow: hidden;
+            }
+            .react-image-viewer-container .react-image-viewer {
+                max-width: 100%;
+                max-height: 100%;
+                /* stylelint-disable-next-line  */
+                cursor: -webkit-grab;
+            }
+        </style>
+    </head>
+
+    <body>
+        <noscript>You need JavaScript to view this website.</noscript>
+        <div>
+            <button onClick="prev()">上一张</button>
+            <button onClick="next()">下一张</button>
+            <button onClick="setLarge()">放大</button>
+            <button onClick="setSmall()">缩小</button>
+            <button onClick="setReset()">还原</button>
+            <button onClick="setRotate()">旋转</button>
+        </div>
+        <div class="react-image-viewer-container" id="image-container">
+            <img class="react-image-viewer" id="image" />
+        </div>
+        <script src="./ImageViewerUtil.js"></script>
+        <script type="text/javascript">
+            const imageContainer = document.getElementById('image-container')
+            const image = document.getElementById('image')
+            const config = {
+                imageContainerNode: imageContainer,
+                imageNode: image,
+                onLoadStart: (url) => {
+                    // 图片加载中，loading
+                    console.log(`imageViewerUtil Image LoadStart:: url=${url}`)
+                },
+                onLoad: (image) => {
+                    // 图片加载完成，loading 取消
+                    const { width, height } = image
+                    console.log(`imageViewerUtil Image Load:: width=${width},height=${height}`)
+                },
+                onLoadError: (err) => {
+                    // 图片加载出错
+                    console.error(`imageViewerUtil Image LoadError:: error=${JSON.stringify(err)}`)
+                },
+                onStyleChange: (opts) => {
+                    // 图片放大、缩小、旋转、拖动回调
+                    console.log(`imageViewerUtil Image StyleChange:: options=${JSON.stringify(opts)}`)
+                },
+            }
+            const imageViewerUtil = new ImageViewerUtil(config)
+
+            const imageUrl = 'https://www.2008php.com/2014_Website_appreciate/2014-02-15/20140215220958T7Vn1T7Vn1.jpg'
+            imageViewerUtil.update({ url: imageUrl })
+
+            function setLarge() {
+                imageViewerUtil.setLarge()
+            }
+            function setSmall() {
+                imageViewerUtil.setSmall()
+            }
+            function setReset() {
+                imageViewerUtil.setReset()
+            }
+            function setRotate() {
+                imageViewerUtil.setRotate()
+            }
+            function prev() {
+                const url = 'https://lmg.jj20.com/up/allimg/1114/091920121117/200919121117-1-1200.jpg'
+                imageViewerUtil.update({ url })
+            }
+            function next() {
+                imageViewerUtil.update({ url: imageUrl })
+            }
+        </script>
+    </body>
+</html>
