@@ -1,6 +1,6 @@
 {
   "name": "react-image-viewers",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "a native js imageViewerUtil and react image viewer",
   "main": "lib/cjs/index.js",
   "module": "lib/esm/index.js",
@@ -11,10 +11,10 @@
     "dist": "rollup -c",
     "build": "yarn && yarn dist"
   },
-  "author": "yc.tao",
+  "author": "qingniaofly",
   "repository": {
     "type": "git",
-    "url": "https://github.com/qingniaofly/react-image-viewer.git"
+    "url": "https://github.com/qingniaofly/react-image-viewers.git"
   },
   "keywords": [
     "react",
@@ -28,12 +28,12 @@
   ],
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/qingniaofly/react-image-viewer/issues"
+    "url": "https://github.com/qingniaofly/react-image-viewers/issues"
   },
   "files":[
     "/dist",
     "/lib",
-    "/typings/index.d.ts"
+    "/typings"
   ],
   "devDependencies": {
     "@babel/core": "^7.18.9",
