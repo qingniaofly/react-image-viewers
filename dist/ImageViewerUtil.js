@@ -670,7 +670,8 @@
         this.updateImageTransform({
           scale: scale,
           translateX: 0,
-          translateY: 0
+          translateY: 0,
+          rotate: rotate
         });
       };
 

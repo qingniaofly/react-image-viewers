@@ -587,7 +587,7 @@ class ImageViewerUtil {
         this.updateScale(scale)
         const rotate = imageStyleConfig.rotate.defaultValue
         this.updateRotate(rotate)
-        this.updateImageTransform({ scale, translateX: 0, translateY: 0 })
+        this.updateImageTransform({ scale, translateX: 0, translateY: 0, rotate })
     }
 
     private rotate() {
