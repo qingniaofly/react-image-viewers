@@ -1,16 +1,14 @@
-
 # react-image-viewers
 
-一款React图片组件，基于ImageViewerUtil实现，包含：图片预览、放大、缩小、旋转、拖动功能
-
+一款 React 图片组件，基于 ImageViewerUtil 实现，包含：图片预览、放大、缩小、旋转、拖动功能
 
 ## 使用方式
 
-```
+```bash
 yarn add react-image-viewers
 ```
 
-```
+```bash
 import ReactImageViewer from 'react-image-viewers'
 import 'react-image-viewers/lib/esm/index.css'
 
@@ -41,23 +39,31 @@ const [loading, setLoading] = useState(false)
 />
 ```
 
-
-## API 
-
-
+## API
 
 ### 1、属性
 
-- url: image url
-- onLoadStart：image loading
-- onLoad： image load
-- onLoadError: image load error
-- onStyleChange：image some attr change
-- timeout：delay show image
+-   [url]: image url
+-   [onLoadStart]：image loading
+-   [onLoad]： image load
+-   [onLoadError]: image load error
+-   [onStyleChange]：image some attr change
+-   [timeout]：delay show image
+-   [config]: {
+-   perScale?: number // 每次缩放比例
+-   minScale?: number // 最小缩放比例
+-   maxScale?: number // 最大缩放比例
+-   perRotate?: number // 每次旋转角度
+-   minRotate?: number // 最小旋转角度
+-   maxRotate?: number // 最大旋转角度
+-   translateTouchType?: 'mousewheel' | 'shift' | 'alt' | 'shift+mousewheel' | 'ctrl+shift+mousewheel' | 'ctrl+alt+mousewheel' // 滚轮缩放触发类型
+-       }
 
+````
 
 ### 2、ref
-```
+
+```bash
 <button
     onClick={() => {
         reactImageViewerRef.current.setLarge()
@@ -86,37 +92,34 @@ const [loading, setLoading] = useState(false)
 >
     旋转
 </button>
-```
-
-
+````
 
 # ImageViewerUtil
 
-此类使用原生js实现，不依赖任何第三方库
+此类使用原生 js 实现，不依赖任何第三方库
 
 包含：图片预览、放大、缩小、旋转、拖动功能
 
 ## 使用方式
 
-### 1、html中使用
-```
-// 引入dist/ImageViewerUtil.js，详见：examples/purehtml/index.html
+### 1、html 中使用
+
+```bash
+# 引入dist/ImageViewerUtil.js，详见：examples/purehtml/index.html
 <script src="ImageViewerUtil.js"></script>
 ```
 
-### 2、import方式
-```
-//
+### 2、import 方式
+
+```bash
 import { ImageViewerUtil } from 'react-image-viewers'
 ```
 
-
 ## API
-
 
 ### 1、初始化
 
-```
+```bash
 const imageContainer = '<img /> 外层dom元素'
 const image = '<img /> dom元素'
 const config = {
@@ -142,46 +145,50 @@ const imageViewerUtil = new ImageViewerUti(config)
 
 切换上一张、下一张图片均自己控制
 
-```
+```bash
 const imageUrl = '图片地址'
 imageViewerUtil.update({ url: imageUrl })
 ```
 
 ### 3、图片放大
-```
+
+```bash
 imageViewerUtil.setLarge()
 ```
 
 ### 4、图片缩小
-```
+
+```bash
 imageViewerUtil.setSmall()
 ```
 
-
 ### 5、图片还原
-```
+
+```bash
 imageViewerUtil.setReset()
 ```
 
-
 ### 6、图片旋转
-```
+
+```bash
 imageViewerUtil.setRotate()
 ```
 
-
 ### 7、销毁实例
-```
+
+```bash
 imageViewerUtil.destory()
 ```
 
-### 7、debug模式
-```
+### 7、debug 模式
+
+```bash
 imageViewerUtil.setDebug(true)
 ```
 
 ### 7、图片延迟加载
-```
+
+```bash
 const timeout = 3000 // 3s后显示图片
 imageViewerUtil.setTimeout(timeout)
 ```

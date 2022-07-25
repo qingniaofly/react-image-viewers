@@ -44,10 +44,6 @@
       return parseFloat(b);
     }
 
-    function isFunction(fn) {
-      return typeof fn === 'function';
-    }
-
     var styleUtil = {
       updateTransform: function updateTransform(dom, opt) {
         if (!dom || !(dom === null || dom === void 0 ? void 0 : dom.style) || !opt) {
@@ -176,6 +172,8 @@
 
         this.canMoveImage = 0; // 鼠标是在图片上按下，是否可以移动
 
+        this.keyCodeList = []; // 当前鼠标按下的keyCode
+
         this.config = {
           isDebug: false,
           imageStyle: {
@@ -197,15 +195,15 @@
               x: 0,
               y: 0,
               prevX: 0,
-              prevY: 0 // 上一次鼠标弹起后的y
-
+              prevY: 0,
+              touchType: 'mousewheel'
             }
           },
           timeout: 0,
-          onLoadStart: null,
-          onLoad: null,
-          onLoadError: null,
-          onStyleChange: null
+          onLoadStart: undefined,
+          onLoad: undefined,
+          onLoadError: undefined,
+          onStyleChange: undefined
         };
 
         this.onDocumentMousewheel = function (e) {
@@ -222,6 +220,14 @@
 
         this.onDocumentMouseUp = function (e) {
           _this.handleImageMouseUp(e);
+        };
+
+        this.onDocumentKeyDown = function (e) {
+          _this.handleImageKeyDown(e);
+        };
+
+        this.onDocumentKeyUp = function (e) {
+          _this.handleImageKeyUp(e);
         };
 
         this.onImageMouseOver = function (e) {
@@ -274,6 +280,8 @@
         registerEvent(document, 'mousedown', this.onDocumentMouseDown);
         registerEvent(document, 'mousemove', this.onDocumentMouseMove);
         registerEvent(document, 'mouseup', this.onDocumentMouseUp);
+        registerEvent(document, 'keydown', this.onDocumentKeyDown);
+        registerEvent(document, 'keyup', this.onDocumentKeyUp);
         registerEvent(this.imageNode, 'mouseover', this.onImageMouseOver);
         registerEvent(this.imageNode, 'mouseleave', this.onImageMouseLeave);
       };
@@ -287,6 +295,25 @@
         unregisterEvent(this.imageNode, 'mouseleave', this.onImageMouseLeave);
       };
 
+      ImageViewerUtil.prototype.handleImageKeyDown = function (e) {
+        var keyCode = e.keyCode;
+        var keyCodeList = this.keyCodeList;
+
+        if (keyCode !== undefined && !keyCodeList.includes(keyCode)) {
+          keyCodeList.push(keyCode);
+        }
+
+        this.keyCodeList = keyCodeList;
+      };
+
+      ImageViewerUtil.prototype.handleImageKeyUp = function (e) {
+        var keyCode = e.keyCode;
+        var keyCodeList = this.keyCodeList;
+        var index = keyCodeList.indexOf(keyCode);
+        keyCodeList.splice(index, 1);
+        this.keyCodeList = keyCodeList;
+      };
+
       ImageViewerUtil.prototype.handleImageWindowResize = function (e) {
         this.updateImagePrevTransform({
           x: 0,
@@ -294,13 +321,89 @@
         });
       };
 
+      ImageViewerUtil.prototype.isPressDownShift = function () {
+        // 是否按下了shift键
+        return this.keyCodeList.includes(16);
+      };
+
+      ImageViewerUtil.prototype.isPressDownCtrl = function () {
+        // 是否按下了ctrl键
+        return this.keyCodeList.includes(17);
+      };
+
+      ImageViewerUtil.prototype.isPressDownAlt = function () {
+        // 是否按下了alt键
+        return this.keyCodeList.includes(18);
+      };
+
+      ImageViewerUtil.prototype.isPressDownCtrlShift = function () {
+        // 是否按下了ctrl+shift键
+        return this.isPressDownCtrl() && this.isPressDownShift();
+      };
+
+      ImageViewerUtil.prototype.isPressDownCtrlAlt = function () {
+        // 是否按下了ctrl+shift键
+        return this.isPressDownCtrl() && this.isPressDownAlt();
+      };
+
       ImageViewerUtil.prototype.handleImageMousewheel = function (e) {
-        if (e.wheelDelta >= 1) {
-          // 放大
-          this.large();
-        } else {
-          // 缩小
-          this.small();
+        var _this = this;
+
+        if ((e === null || e === void 0 ? void 0 : e.target) !== this.imageNode) {
+          // 必须在图片内滚动滚轮
+          return;
+        }
+
+        var imageStyleConfig = this.getImageStyleConfig();
+        var translate = imageStyleConfig.translate;
+
+        var traslateImage = function traslateImage(e) {
+          if (e.wheelDelta >= 1) {
+            // 放大
+            _this.large();
+          } else {
+            // 缩小
+            _this.small();
+          }
+        };
+
+        switch (translate.touchType) {
+          case 'mousewheel':
+            traslateImage(e);
+            break;
+
+          case 'shift+mousewheel':
+            if (this.isPressDownShift()) {
+              // 鼠标按下shift键，滚动滚轮，缩放图片
+              traslateImage(e);
+            }
+
+            break;
+
+          case 'alt+mousewheel':
+            if (this.isPressDownAlt()) {
+              traslateImage(e);
+            }
+
+            break;
+
+          case 'ctrl+shift+mousewheel':
+            if (this.isPressDownCtrlShift()) {
+              traslateImage(e);
+            }
+
+            break;
+
+          case 'ctrl+alt+mousewheel':
+            if (this.isPressDownCtrlAlt()) {
+              traslateImage(e);
+            }
+
+            break;
+
+          default:
+            traslateImage(e);
+            break;
         }
       };
 
@@ -380,6 +483,87 @@
         this.imageNode = imageNode;
       };
 
+      ImageViewerUtil.prototype.updateImageStyleConfig = function (opts) {
+        if (!opts) {
+          return;
+        }
+
+        this.updateImageStyleScaleConfig(opts);
+        this.updateImageStyleRotateConfig(opts);
+        this.updateImageStyleTranslateConfig(opts);
+      };
+
+      ImageViewerUtil.prototype.updateImageStyleScaleConfig = function (opts) {
+        if (!opts) {
+          return;
+        }
+
+        var perScale = opts.perScale,
+            minScale = opts.minScale,
+            maxScale = opts.maxScale;
+        var imageStyleConfig = this.getImageStyleConfig();
+
+        if (typeof perScale === 'number' && !isNaN(perScale)) {
+          imageStyleConfig.scale.per = perScale;
+        }
+
+        if (typeof minScale === 'number' && typeof maxScale === 'number') {
+          if (minScale > maxScale) {
+            return;
+          }
+        }
+
+        if (typeof minScale === 'number' && !isNaN(minScale)) {
+          imageStyleConfig.scale.min = minScale;
+        }
+
+        if (typeof maxScale === 'number' && !isNaN(maxScale)) {
+          imageStyleConfig.scale.max = maxScale;
+        }
+      };
+
+      ImageViewerUtil.prototype.updateImageStyleRotateConfig = function (opts) {
+        if (!opts) {
+          return;
+        }
+
+        var perRotate = opts.perRotate,
+            minRotate = opts.minRotate,
+            maxRotate = opts.maxRotate;
+        var imageStyleConfig = this.getImageStyleConfig();
+
+        if (typeof perRotate === 'number' && !isNaN(perRotate)) {
+          imageStyleConfig.rotate.per = perRotate;
+        }
+
+        if (typeof minRotate === 'number' && typeof maxRotate === 'number') {
+          if (minRotate > maxRotate) {
+            return;
+          }
+        }
+
+        if (typeof minRotate === 'number' && !isNaN(minRotate)) {
+          imageStyleConfig.rotate.min = minRotate;
+        }
+
+        if (typeof maxRotate === 'number' && !isNaN(maxRotate)) {
+          imageStyleConfig.rotate.max = maxRotate;
+        }
+      };
+
+      ImageViewerUtil.prototype.updateImageStyleTranslateConfig = function (opts) {
+        if (!opts) {
+          return;
+        }
+
+        var translateTouchType = opts.translateTouchType;
+        var imageStyleConfig = this.getImageStyleConfig();
+
+        if (typeof translateTouchType === 'string') {
+          imageStyleConfig.translate.touchType = translateTouchType;
+        }
+      };
+
       ImageViewerUtil.prototype.updateImageCallback = function (params) {
         var onLoadStart = params.onLoadStart,
             onLoad = params.onLoad,
@@ -392,7 +576,8 @@
       };
 
       ImageViewerUtil.prototype.updateImageTransform = function (opts) {
-        isFunction(this.config.onStyleChange) && this.config.onStyleChange(opts);
+        var onStyleChange = this.config.onStyleChange;
+        typeof onStyleChange === 'function' && onStyleChange(opts);
         styleUtil.updateTransform(this.imageNode, opts);
       };
 
@@ -511,7 +696,7 @@
         var _this = this;
 
         var onLoadStart = this.config.onLoadStart;
-        isFunction(onLoadStart) && onLoadStart(url);
+        typeof onLoadStart === 'function' && onLoadStart(url);
         loadImagePromise(url).then(function (image) {
           var _a = _this.config,
               onLoad = _a.onLoad,
@@ -519,7 +704,7 @@
               timeout = _b === void 0 ? 0 : _b;
 
           var fn = function fn() {
-            isFunction(onLoad) && onLoad(image);
+            typeof onLoad === 'function' && onLoad(image);
 
             _this.updateImageUrl(url);
 
@@ -533,7 +718,7 @@
           }
         })["catch"](function (err) {
           var onLoadError = _this.config.onLoadError;
-          isFunction(onLoadError) && onLoadError(err);
+          typeof onLoadError === 'function' && onLoadError(err);
         });
       };
 
@@ -559,6 +744,14 @@
         var url = _a.url;
         this.reset();
         this.onLoadImage(url);
+      };
+
+      ImageViewerUtil.prototype.setConfig = function (opts) {
+        this.updateImageStyleConfig(opts);
+      };
+
+      ImageViewerUtil.prototype.preload = function (url) {
+        return loadImagePromise(url);
       };
 
       ImageViewerUtil.prototype.setDebug = function (debug) {

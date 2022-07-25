@@ -1,4 +1,4 @@
-function registerEvent(dom, name, fn) {
+function registerEvent(dom, name: string, fn) {
     if (dom.attachEvent) {
         dom.attachEvent('on' + name, fn)
     } else {
@@ -6,7 +6,7 @@ function registerEvent(dom, name, fn) {
     }
 }
 
-function unregisterEvent(dom, name, fn) {
+function unregisterEvent(dom, name: string, fn) {
     if (dom.detachEvent) {
         dom.detachEvent('on' + name, fn)
     } else {
@@ -37,7 +37,7 @@ function isFunction(fn) {
 }
 
 const styleUtil = {
-    updateTransform: (dom: HTMLDivElement | HTMLImageElement, opt: { scale?: number; translateX?: number; translateY?: number; rotateZ?: number }) => {
+    updateTransform: (dom: HTMLDivElement | HTMLImageElement, opt: IImagerViewerStyle) => {
         if (!dom || !dom?.style || !opt) {
             return
         }
@@ -75,7 +75,7 @@ const styleUtil = {
         dom.style.transform = transfromList.join(' ')
     },
 
-    parseImageDragMoveLimitSize(imageNode, scale) {
+    parseImageDragMoveLimitSize(imageNode: HTMLImageElement, scale: number) {
         const { clientWidth, clientHeight } = imageNode
         const { offsetLeft, offsetTop } = imageNode
         const width = scale * clientWidth + offsetLeft
@@ -105,6 +105,64 @@ const logUtil = {
     },
 }
 
+interface IImagerViewerStyle {
+    scale?: number
+    translateX?: number
+    translateY?: number
+    rotateZ?: number
+}
+
+interface IImageViewerParams {
+    imageContainerNode: HTMLDivElement
+    imageNode: HTMLImageElement
+    onLoadStart?: (url: string) => void
+    onLoad?: (image: HTMLImageElement) => void
+    onLoadError?: (err) => void
+    onStyleChange?: (opts: IImagerViewerStyle) => void
+}
+
+interface IImageViewerConfig {
+    isDebug: false
+    imageStyle: {
+        scale: {
+            defaultValue: number
+            value: number // 当前缩放比例
+            per: number
+            min: number
+            max: number
+        }
+        rotate: {
+            defaultValue: number
+            value: number // 当前旋转角度
+            per: number
+            min: number
+            max: number
+        }
+        translate: {
+            x: number
+            y: number
+            prevX: number // 上一次鼠标弹起后的x
+            prevY: number // 上一次鼠标弹起后的y
+            touchType: string // 触发类型
+        }
+    }
+    timeout: number
+    onLoadStart?: (url: string) => void
+    onLoad?: (image: HTMLImageElement) => void
+    onLoadError?: (err) => void
+    onStyleChange?: (opts: IImagerViewerStyle) => void
+}
+
+interface IImageViewerStyleUpdateConfig {
+    perScale?: number // 每次缩放比例
+    minScale?: number // 最小缩放比例
+    maxScale?: number // 最大缩放比例
+    perRotate?: number // 每次旋转角度
+    minRotate?: number // 最小旋转角度
+    maxRotate?: number // 最大旋转角度
+    translateTouchType?: 'mousewheel' | 'ctrl+mousewheel' | string // 滚轮缩放
+}
+
 class ImageViewerUtil {
     private imageContainerNode: HTMLDivElement
     private imageNode: HTMLImageElement // <img />
@@ -114,8 +172,9 @@ class ImageViewerUtil {
     private imageEventY = 0 // 开始拖动图片时，鼠标的位置y
     private canDragImage = 0 // 鼠标是在图片上，是否可以拖动
     private canMoveImage = 0 // 鼠标是在图片上按下，是否可以移动
+    private keyCodeList: number[] = [] // 当前鼠标按下的keyCode
 
-    private config = {
+    private config: IImageViewerConfig = {
         isDebug: false,
         imageStyle: {
             scale: {
@@ -137,16 +196,17 @@ class ImageViewerUtil {
                 y: 0,
                 prevX: 0, // 上一次鼠标弹起后的x
                 prevY: 0, // 上一次鼠标弹起后的y
+                touchType: 'mousewheel',
             },
         },
         timeout: 0,
-        onLoadStart: null,
-        onLoad: null,
-        onLoadError: null,
-        onStyleChange: null,
+        onLoadStart: undefined,
+        onLoad: undefined,
+        onLoadError: undefined,
+        onStyleChange: undefined,
     }
 
-    constructor(params) {
+    constructor(params: IImageViewerParams) {
         this.updateDOMNode(params)
         this.updateImageCallback(params)
         this.bindEvent()
@@ -177,12 +237,20 @@ class ImageViewerUtil {
         this.handleImageMouseDown(e)
     }
 
-    private onDocumentMouseMove = (e: React.MouseEvent) => {
+    private onDocumentMouseMove = (e) => {
         this.handleImageMouseMove(e)
     }
 
     private onDocumentMouseUp = (e) => {
         this.handleImageMouseUp(e)
+    }
+
+    private onDocumentKeyDown = (e) => {
+        this.handleImageKeyDown(e)
+    }
+
+    private onDocumentKeyUp = (e) => {
+        this.handleImageKeyUp(e)
     }
 
     private onImageMouseOver = (e) => {
@@ -201,6 +269,8 @@ class ImageViewerUtil {
         registerEvent(document, 'mousedown', this.onDocumentMouseDown)
         registerEvent(document, 'mousemove', this.onDocumentMouseMove)
         registerEvent(document, 'mouseup', this.onDocumentMouseUp)
+        registerEvent(document, 'keydown', this.onDocumentKeyDown)
+        registerEvent(document, 'keyup', this.onDocumentKeyUp)
         registerEvent(this.imageNode, 'mouseover', this.onImageMouseOver)
         registerEvent(this.imageNode, 'mouseleave', this.onImageMouseLeave)
     }
@@ -214,17 +284,97 @@ class ImageViewerUtil {
         unregisterEvent(this.imageNode, 'mouseleave', this.onImageMouseLeave)
     }
 
+    private handleImageKeyDown(e) {
+        const keyCode = e.keyCode as number
+        const { keyCodeList } = this
+        if (keyCode !== undefined && !keyCodeList.includes(keyCode)) {
+            keyCodeList.push(keyCode)
+        }
+        this.keyCodeList = keyCodeList
+    }
+
+    private handleImageKeyUp(e) {
+        const keyCode = e.keyCode as number
+        const { keyCodeList } = this
+        const index = keyCodeList.indexOf(keyCode)
+        keyCodeList.splice(index, 1)
+        this.keyCodeList = keyCodeList
+    }
+
     private handleImageWindowResize(e) {
         this.updateImagePrevTransform({ x: 0, y: 0 })
     }
 
+    private isPressDownShift() {
+        // 是否按下了shift键
+        return this.keyCodeList.includes(16)
+    }
+
+    private isPressDownCtrl() {
+        // 是否按下了ctrl键
+        return this.keyCodeList.includes(17)
+    }
+
+    private isPressDownAlt() {
+        // 是否按下了alt键
+        return this.keyCodeList.includes(18)
+    }
+
+    private isPressDownCtrlShift() {
+        // 是否按下了ctrl+shift键
+        return this.isPressDownCtrl() && this.isPressDownShift()
+    }
+
+    private isPressDownCtrlAlt() {
+        // 是否按下了ctrl+shift键
+        return this.isPressDownCtrl() && this.isPressDownAlt()
+    }
+
     private handleImageMousewheel(e) {
-        if (e.wheelDelta >= 1) {
-            // 放大
-            this.large()
-        } else {
-            // 缩小
-            this.small()
+        if (e?.target !== this.imageNode) {
+            // 必须在图片内滚动滚轮
+            return
+        }
+        const imageStyleConfig = this.getImageStyleConfig()
+        const { translate } = imageStyleConfig
+
+        const traslateImage = (e) => {
+            if (e.wheelDelta >= 1) {
+                // 放大
+                this.large()
+            } else {
+                // 缩小
+                this.small()
+            }
+        }
+        switch (translate.touchType) {
+            case 'mousewheel':
+                traslateImage(e)
+                break
+            case 'shift+mousewheel':
+                if (this.isPressDownShift()) {
+                    // 鼠标按下shift键，滚动滚轮，缩放图片
+                    traslateImage(e)
+                }
+                break
+            case 'alt+mousewheel':
+                if (this.isPressDownAlt()) {
+                    traslateImage(e)
+                }
+                break
+            case 'ctrl+shift+mousewheel':
+                if (this.isPressDownCtrlShift()) {
+                    traslateImage(e)
+                }
+                break
+            case 'ctrl+alt+mousewheel':
+                if (this.isPressDownCtrlAlt()) {
+                    traslateImage(e)
+                }
+                break
+            default:
+                traslateImage(e)
+                break
         }
     }
 
@@ -284,13 +434,83 @@ class ImageViewerUtil {
         this.canMoveImage = 0
     }
 
-    private updateDOMNode(params) {
+    private updateDOMNode(params: IImageViewerParams) {
         const { imageContainerNode, imageNode } = params
         this.imageContainerNode = imageContainerNode
         this.imageNode = imageNode
     }
 
-    private updateImageCallback(params) {
+    private updateImageStyleConfig(opts: IImageViewerStyleUpdateConfig) {
+        if (!opts) {
+            return
+        }
+        this.updateImageStyleScaleConfig(opts)
+        this.updateImageStyleRotateConfig(opts)
+        this.updateImageStyleTranslateConfig(opts)
+    }
+
+    private updateImageStyleScaleConfig(opts: IImageViewerStyleUpdateConfig) {
+        if (!opts) {
+            return
+        }
+        const { perScale, minScale, maxScale } = opts
+        const imageStyleConfig = this.getImageStyleConfig()
+
+        if (typeof perScale === 'number' && !isNaN(perScale)) {
+            imageStyleConfig.scale.per = perScale
+        }
+
+        if (typeof minScale === 'number' && typeof maxScale === 'number') {
+            if (minScale > maxScale) {
+                return
+            }
+        }
+        if (typeof minScale === 'number' && !isNaN(minScale)) {
+            imageStyleConfig.scale.min = minScale
+        }
+
+        if (typeof maxScale === 'number' && !isNaN(maxScale)) {
+            imageStyleConfig.scale.max = maxScale
+        }
+    }
+
+    private updateImageStyleRotateConfig(opts: IImageViewerStyleUpdateConfig) {
+        if (!opts) {
+            return
+        }
+        const { perRotate, minRotate, maxRotate } = opts
+        const imageStyleConfig = this.getImageStyleConfig()
+
+        if (typeof perRotate === 'number' && !isNaN(perRotate)) {
+            imageStyleConfig.rotate.per = perRotate
+        }
+
+        if (typeof minRotate === 'number' && typeof maxRotate === 'number') {
+            if (minRotate > maxRotate) {
+                return
+            }
+        }
+        if (typeof minRotate === 'number' && !isNaN(minRotate)) {
+            imageStyleConfig.rotate.min = minRotate
+        }
+
+        if (typeof maxRotate === 'number' && !isNaN(maxRotate)) {
+            imageStyleConfig.rotate.max = maxRotate
+        }
+    }
+
+    private updateImageStyleTranslateConfig(opts: IImageViewerStyleUpdateConfig) {
+        if (!opts) {
+            return
+        }
+        const { translateTouchType } = opts
+        const imageStyleConfig = this.getImageStyleConfig()
+        if (typeof translateTouchType === 'string') {
+            imageStyleConfig.translate.touchType = translateTouchType
+        }
+    }
+
+    private updateImageCallback(params: IImageViewerParams) {
         const { onLoadStart, onLoad, onLoadError, onStyleChange } = params
         this.config.onLoadStart = onLoadStart
         this.config.onLoad = onLoad
@@ -299,7 +519,8 @@ class ImageViewerUtil {
     }
 
     private updateImageTransform(opts) {
-        isFunction(this.config.onStyleChange) && this.config.onStyleChange(opts)
+        const { onStyleChange } = this.config
+        typeof onStyleChange === 'function' && onStyleChange(opts)
         styleUtil.updateTransform(this.imageNode, opts)
     }
 
@@ -381,12 +602,12 @@ class ImageViewerUtil {
 
     private onLoadImage(url) {
         const { onLoadStart } = this.config
-        isFunction(onLoadStart) && onLoadStart(url)
+        typeof onLoadStart === 'function' && onLoadStart(url)
         loadImagePromise(url)
-            .then((image) => {
+            .then((image: any) => {
                 const { onLoad, timeout = 0 } = this.config
                 const fn = () => {
-                    isFunction(onLoad) && onLoad(image)
+                    typeof onLoad === 'function' && onLoad(image as HTMLImageElement)
                     this.updateImageUrl(url)
                     this.updateImage(image)
                 }
@@ -398,7 +619,7 @@ class ImageViewerUtil {
             })
             .catch((err) => {
                 const { onLoadError } = this.config
-                isFunction(onLoadError) && onLoadError(err)
+                typeof onLoadError === 'function' && onLoadError(err)
             })
     }
 
@@ -423,6 +644,14 @@ class ImageViewerUtil {
     update({ url }) {
         this.reset()
         this.onLoadImage(url)
+    }
+
+    setConfig(opts) {
+        this.updateImageStyleConfig(opts)
+    }
+
+    preload(url: string) {
+        return loadImagePromise(url)
     }
 
     setDebug(debug = false) {
