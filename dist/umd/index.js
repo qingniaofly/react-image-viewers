@@ -810,7 +810,8 @@
           _b = props.timeout,
           timeout = _b === void 0 ? 0 : _b,
           _c = props.isDebug,
-          isDebug = _c === void 0 ? false : _c;
+          isDebug = _c === void 0 ? false : _c,
+          config = props.config;
       var imageContainerRef = React.useRef(null);
       var imageRef = React.useRef(null);
       var instance = React.useRef({
@@ -842,6 +843,10 @@
           imageViewerUtil.destory();
         };
       }, []);
+      React.useEffect(function () {
+        var imageViewerUtil = instance.current.imageViewerUtil;
+        imageViewerUtil.setConfig(config);
+      }, [config]);
       React.useEffect(function () {
         var imageViewerUtil = instance.current.imageViewerUtil;
         imageViewerUtil.setTimeout(timeout);
@@ -882,10 +887,6 @@
         className: "react-image-viewer"
       }));
     });
-
-    // export type { IReactImageViewerProps }
-    // const ReactImageViewer = require('./ReactImageViewer')
-    // module.exports = ReactImageViewer
 
     exports.ImageViewerUtil = ImageViewerUtil;
     exports["default"] = ReactImageViewer;
