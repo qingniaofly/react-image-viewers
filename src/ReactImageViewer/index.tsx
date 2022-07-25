@@ -35,7 +35,7 @@ interface IImageViewerStyleUpdateConfig {
     perRotate?: number // 每次旋转角度
     minRotate?: number // 最小旋转角度
     maxRotate?: number // 最大旋转角度
-    translateTouchType?: 'mousewheel' | 'ctrl+mousewheel' | string // 滚轮缩放触发类型
+    translateTouchType?: 'mousewheel' | 'shift+mousewheel' | 'alt+mousewheel' | 'ctrl+shift+mousewheel' | 'ctrl+alt+mousewheel' // 滚轮缩放触发类型
 }
 
 const ReactImageViewer = React.forwardRef((props: IReactImageViewerProps, ref: any) => {

@@ -49,17 +49,14 @@ const [loading, setLoading] = useState(false)
 -   [onLoadError]: image load error
 -   [onStyleChange]：image some attr change
 -   [timeout]：delay show image
--   [config]: {
--   perScale?: number // 每次缩放比例
--   minScale?: number // 最小缩放比例
--   maxScale?: number // 最大缩放比例
--   perRotate?: number // 每次旋转角度
--   minRotate?: number // 最小旋转角度
--   maxRotate?: number // 最大旋转角度
--   translateTouchType?: 'mousewheel' | 'shift' | 'alt' | 'shift+mousewheel' | 'ctrl+shift+mousewheel' | 'ctrl+alt+mousewheel' // 滚轮缩放触发类型
--       }
-
-````
+-   [config]:
+    perScale?: number // 每次缩放比例
+    minScale?: number // 最小缩放比例
+    maxScale?: number // 最大缩放比例
+    perRotate?: number // 每次旋转角度
+    minRotate?: number // 最小旋转角度
+    maxRotate?: number // 最大旋转角度
+    translateTouchType?: 'mousewheel' | 'shift' | 'alt' | 'shift+mousewheel' | 'ctrl+shift+mousewheel' | 'ctrl+alt+mousewheel' // 滚轮缩放触发类型
 
 ### 2、ref
 
@@ -92,7 +89,7 @@ const [loading, setLoading] = useState(false)
 >
     旋转
 </button>
-````
+```
 
 # ImageViewerUtil
 
@@ -191,4 +188,18 @@ imageViewerUtil.setDebug(true)
 ```bash
 const timeout = 3000 // 3s后显示图片
 imageViewerUtil.setTimeout(timeout)
+```
+
+### 8、更新 config
+
+```bash
+imageViewerUtil.setConfig({
+    # perScale: 3, // 每次缩放比例
+    # minScale: 2, // 最小缩放比例
+    # maxScale: 7, // 最大缩放比例
+    # perRotate: 10, // 每次旋转角度
+    # minRotate: 0, // 最小旋转角度
+    # maxRotate: 180, // 最大旋转角度
+    # translateTouchType: 'shift+mousewheel', // 'mousewheel' | 'shift+mousewheel' | 'alt+mousewheel' | 'ctrl+shift+mousewheel' | 'ctrl+alt+mousewheel' // 滚轮缩放触发类型，默认mousewheel
+})
 ```
