@@ -63,7 +63,7 @@ export default [
         input: 'src/index.js',
         output: {
             file: pkg.main,
-            format: 'cjs', // umd是兼容amd/cjs/iife的通用打包格式，适合浏览器
+            format: 'cjs',
             // name: 'named',
             globals: umdGlobals,
         },
@@ -80,7 +80,7 @@ export default [
         input: 'src/index.js',
         output: {
             file: pkg.module,
-            format: 'es', // umd是兼容amd/cjs/iife的通用打包格式，适合浏览器
+            format: 'es',
             globals: umdGlobals,
         },
         external: Object.keys(umdGlobals),

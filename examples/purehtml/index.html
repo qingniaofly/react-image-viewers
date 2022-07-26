@@ -70,7 +70,7 @@
                 },
             }
             const imageViewerUtil = new ImageViewerUtil(config)
-
+            // imageViewerUtil.setDebug(true)
             imageViewerUtil.setConfig({
                 // perScale: 3, // 每次缩放比例
                 // minScale: 2, // 最小缩放比例
@@ -78,7 +78,7 @@
                 // perRotate: 10, // 每次旋转角度
                 // minRotate: 0, // 最小旋转角度
                 // maxRotate: 180, // 最大旋转角度
-                translateTouchType: 'shift+mousewheel', // 滚轮缩放触发类型
+                scaleTouch: ['shift+arrow'], // 滚轮缩放触发类型
             })
 
             const imageUrl = 'https://www.2008php.com/2014_Website_appreciate/2014-02-15/20140215220958T7Vn1T7Vn1.jpg'

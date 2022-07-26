@@ -127,9 +127,12 @@ interface IImageViewerConfig {
         scale: {
             defaultValue: number
             value: number // 当前缩放比例
-            per: number
+            per: number //
+            smallPer?: number // 缩小的时候，每次缩放比例，如果与per不相等，则用此值
+            largePer?: number // 放大的时候，每次缩放比例，如果与per不相等，则用此值
             min: number
             max: number
+            touch?: string[] // 'mousewheel' | 'shift+mousewheel' | 'alt+mousewheel' | 'ctrl+shift+mousewheel' | 'ctrl+alt+mousewheel' | 'ctrl+arrow' | 'shift+arrow' | 'alt+arrow' // 触发方式
         }
         rotate: {
             defaultValue: number
@@ -143,7 +146,7 @@ interface IImageViewerConfig {
             y: number
             prevX: number // 上一次鼠标弹起后的x
             prevY: number // 上一次鼠标弹起后的y
-            touchType: string // 触发类型
+            touch?: string[] // 'mousemove' | 'shift+mousemove' | 'alt+mousemove' | 'ctrl+shift+mousemove' | 'ctrl+alt+mousemove' // 触发方式
         }
     }
     timeout: number
@@ -155,12 +158,15 @@ interface IImageViewerConfig {
 
 interface IImageViewerStyleUpdateConfig {
     perScale?: number // 每次缩放比例
+    perSmallScale?: number // 缩小的时候，每次缩放比例，如果与per不相等，则用此值
+    perLargeScale?: number // 放大的时候，每次缩放比例，如果与per不相等，则用此值
     minScale?: number // 最小缩放比例
     maxScale?: number // 最大缩放比例
+    scaleTouch?: string[] // 'mousewheel' | 'shift+mousewheel' | 'alt+mousewheel' | 'ctrl+shift+mousewheel' | 'ctrl+alt+mousewheel' | 'ctrl+arrow' | 'shift+arrow' | 'alt+arrow' // 触发方式
     perRotate?: number // 每次旋转角度
     minRotate?: number // 最小旋转角度
     maxRotate?: number // 最大旋转角度
-    translateTouchType?: 'mousewheel' | 'shift+mousewheel' | 'alt+mousewheel' | 'ctrl+shift+mousewheel' | 'ctrl+alt+mousewheel' // 滚轮缩放触发类型
+    translateTouch?: string[] // string[] // 'mousemove' | 'shift+mousemove' | 'alt+mousemove' | 'ctrl+shift+mousemove' | 'ctrl+alt+mousemove' // 触发方式
 }
 
 class ImageViewerUtil {
@@ -170,8 +176,8 @@ class ImageViewerUtil {
 
     private imageEventX = 0 // 开始拖动图片时，鼠标的位置x
     private imageEventY = 0 // 开始拖动图片时，鼠标的位置y
-    private canDragImage = 0 // 鼠标是在图片上，是否可以拖动
-    private canMoveImage = 0 // 鼠标是在图片上按下，是否可以移动
+    private isMouseOverImage = 0 // 鼠标是否在图片上
+    private isMouseDownImage = 0 // 鼠标是在图片上按下了
     private keyCodeList: number[] = [] // 当前鼠标按下的keyCode
 
     private config: IImageViewerConfig = {
@@ -180,23 +186,26 @@ class ImageViewerUtil {
             scale: {
                 defaultValue: 1,
                 value: 1, // 当前缩放比例
-                per: 0.15,
-                min: 0.1,
-                max: 20,
+                per: 0.15, // 每次缩放比例
+                // smallPer: 0.15, // 缩小的时候，每次缩放比例
+                // largePer: 0.15, // 放大的时候，每次缩放比例
+                min: 0.1, // 最小缩放比例
+                max: 20, // 最大缩放比例
+                touch: ['mousewheel'], // 默认触发方式
             },
             rotate: {
                 defaultValue: 0,
                 value: 0, // 当前旋转角度
-                per: 90,
-                min: 0,
-                max: 360,
+                per: 90, // 每次旋转的角度
+                min: 0, // 最小角度
+                max: 360, // 最大交互
             },
             translate: {
                 x: 0,
                 y: 0,
                 prevX: 0, // 上一次鼠标弹起后的x
                 prevY: 0, // 上一次鼠标弹起后的y
-                touchType: 'mousewheel',
+                touch: ['mousemove'], // 默认触发方式
             },
         },
         timeout: 0,
@@ -291,6 +300,47 @@ class ImageViewerUtil {
             keyCodeList.push(keyCode)
         }
         this.keyCodeList = keyCodeList
+        this.log(1, `ImageViewerUtil image keydown=${JSON.stringify(keyCodeList)}`)
+        this.handleImageKeyDownScale(e)
+    }
+
+    private handleImageKeyDownScale(e) {
+        if (!this.isMouseOverImage) {
+            // 必须在图片内
+            return
+        }
+        const touchType = this.getImageStyleConfigTouchType('scale')
+        if (touchType.includes('ctrl+arrow')) {
+            // 按住ctrl，在操作上下箭头，进行缩放
+            if (this.isPressDownCtrl() && this.isPressDownArrowUp()) {
+                this.large()
+                return
+            }
+            if (this.isPressDownCtrl() && this.isPressDownArrowDown()) {
+                this.small()
+                return
+            }
+        } else if (touchType.includes('shift+arrow')) {
+            // 按住shift，在操作上下箭头，进行缩放
+            if (this.isPressDownShift() && this.isPressDownArrowUp()) {
+                this.large()
+                return
+            }
+            if (this.isPressDownShift() && this.isPressDownArrowDown()) {
+                this.small()
+                return
+            }
+        } else if (touchType.includes('alt+arrow')) {
+            // 按住alt，在操作上下箭头，进行缩放
+            if (this.isPressDownAlt() && this.isPressDownArrowUp()) {
+                this.large()
+                return
+            }
+            if (this.isPressDownAlt() && this.isPressDownArrowDown()) {
+                this.small()
+                return
+            }
+        }
     }
 
     private handleImageKeyUp(e) {
@@ -320,6 +370,16 @@ class ImageViewerUtil {
         return this.keyCodeList.includes(18)
     }
 
+    private isPressDownArrowUp() {
+        // 是否按下了↑键
+        return this.keyCodeList.includes(38)
+    }
+
+    private isPressDownArrowDown() {
+        // 是否按下了↓键
+        return this.keyCodeList.includes(40)
+    }
+
     private isPressDownCtrlShift() {
         // 是否按下了ctrl+shift键
         return this.isPressDownCtrl() && this.isPressDownShift()
@@ -330,14 +390,23 @@ class ImageViewerUtil {
         return this.isPressDownCtrl() && this.isPressDownAlt()
     }
 
+    private getImageStyleConfigTouchType(key: string) {
+        const imageStyleConfig = this.getImageStyleConfig()
+        const attr = imageStyleConfig[key]
+        if (!attr) {
+            return []
+        }
+        let touchType = attr?.touch || []
+        touchType = Object.prototype.toString.call(touchType) === '[object Array]' ? touchType : []
+        return touchType
+    }
+
     private handleImageMousewheel(e) {
-        if (e?.target !== this.imageNode) {
+        if (!this.isMouseOverImage) {
             // 必须在图片内滚动滚轮
             return
         }
-        const imageStyleConfig = this.getImageStyleConfig()
-        const { translate } = imageStyleConfig
-
+        const touchType = this.getImageStyleConfigTouchType('scale')
         const traslateImage = (e) => {
             if (e.wheelDelta >= 1) {
                 // 放大
@@ -347,49 +416,48 @@ class ImageViewerUtil {
                 this.small()
             }
         }
-        switch (translate.touchType) {
-            case 'mousewheel':
+
+        if (touchType.includes('mousewheel')) {
+            traslateImage(e)
+        } else if (touchType.includes('ctrl+mousewheel')) {
+            if (this.isPressDownCtrl()) {
+                // 鼠标按下ctrl键，滚动滚轮，缩放图片
                 traslateImage(e)
-                break
-            case 'shift+mousewheel':
-                if (this.isPressDownShift()) {
-                    // 鼠标按下shift键，滚动滚轮，缩放图片
-                    traslateImage(e)
-                }
-                break
-            case 'alt+mousewheel':
-                if (this.isPressDownAlt()) {
-                    traslateImage(e)
-                }
-                break
-            case 'ctrl+shift+mousewheel':
-                if (this.isPressDownCtrlShift()) {
-                    traslateImage(e)
-                }
-                break
-            case 'ctrl+alt+mousewheel':
-                if (this.isPressDownCtrlAlt()) {
-                    traslateImage(e)
-                }
-                break
-            default:
+            }
+        } else if (touchType.includes('shift+mousewheel')) {
+            if (this.isPressDownShift()) {
+                // 鼠标按下shift键，滚动滚轮，缩放图片
                 traslateImage(e)
-                break
+            }
+        } else if (touchType.includes('alt+mousewheel')) {
+            if (this.isPressDownAlt()) {
+                traslateImage(e)
+            }
+        } else if (touchType.includes('ctrl+shift+mousewheel')) {
+            if (this.isPressDownCtrlShift()) {
+                traslateImage(e)
+            }
+        } else if (touchType.includes('ctrl+alt+mousewheel')) {
+            if (this.isPressDownCtrlAlt()) {
+                traslateImage(e)
+            }
+        } else {
+            traslateImage(e)
         }
     }
 
     private handleImageMouseOver(e) {
-        this.canDragImage = 1
+        this.isMouseOverImage = 1
     }
 
     private handleImageMouseLeave(e) {
         e.preventDefault()
-        this.canDragImage = 0
+        this.isMouseOverImage = 0
     }
 
     private handleImageMouseDown(e) {
-        if (this.canDragImage) {
-            this.canMoveImage = 1
+        if (this.isMouseOverImage) {
+            this.isMouseDownImage = 1
             const event = window.event as any
             this.imageEventX = event.x
             this.imageEventY = event.y
@@ -401,7 +469,7 @@ class ImageViewerUtil {
 
     private handleImageMouseMove(e) {
         e.preventDefault()
-        if (this.canMoveImage) {
+        if (this.isMouseDownImage) {
             const event = window.event as any
             const eventX = event.x
             const eventY = event.y
@@ -431,7 +499,7 @@ class ImageViewerUtil {
     }
 
     private handleImageMouseUp(e) {
-        this.canMoveImage = 0
+        this.isMouseDownImage = 0
     }
 
     private updateDOMNode(params: IImageViewerParams) {
@@ -453,11 +521,19 @@ class ImageViewerUtil {
         if (!opts) {
             return
         }
-        const { perScale, minScale, maxScale } = opts
+        const { perScale, perSmallScale, perLargeScale, minScale, maxScale, scaleTouch } = opts
         const imageStyleConfig = this.getImageStyleConfig()
 
         if (typeof perScale === 'number' && !isNaN(perScale)) {
             imageStyleConfig.scale.per = perScale
+        }
+
+        if (typeof perSmallScale === 'number' && !isNaN(perSmallScale)) {
+            imageStyleConfig.scale.smallPer = perSmallScale
+        }
+
+        if (typeof perLargeScale === 'number' && !isNaN(perLargeScale)) {
+            imageStyleConfig.scale.largePer = perLargeScale
         }
 
         if (typeof minScale === 'number' && typeof maxScale === 'number') {
@@ -471,6 +547,10 @@ class ImageViewerUtil {
 
         if (typeof maxScale === 'number' && !isNaN(maxScale)) {
             imageStyleConfig.scale.max = maxScale
+        }
+
+        if (Object.prototype.toString.call(scaleTouch) === '[object Array]') {
+            imageStyleConfig.scale.touch = scaleTouch
         }
     }
 
@@ -503,10 +583,10 @@ class ImageViewerUtil {
         if (!opts) {
             return
         }
-        const { translateTouchType } = opts
+        const { translateTouch } = opts
         const imageStyleConfig = this.getImageStyleConfig()
-        if (typeof translateTouchType === 'string') {
-            imageStyleConfig.translate.touchType = translateTouchType
+        if (Object.prototype.toString.call(translateTouch) === '[object Array]') {
+            imageStyleConfig.translate.touch = translateTouch
         }
     }
 
@@ -537,9 +617,10 @@ class ImageViewerUtil {
 
     private large() {
         const imageStyleConfig = this.getImageStyleConfig()
-        const { per: scalePer, max: maxScale, value } = imageStyleConfig.scale
-        let scale = parseNumber(value + scalePer)
+        const { per: perScale, max: maxScale, value } = imageStyleConfig.scale
+        let scale = parseNumber(value + perScale)
         scale = scale > maxScale ? maxScale : scale
+        // 还原上一次的移动位置
         this.updateImagePrevTransform({ x: 0, y: 0 })
         this.updateScale(scale)
         this.updateImageTransform({ scale })
@@ -547,9 +628,10 @@ class ImageViewerUtil {
 
     private small() {
         const imageStyleConfig = this.getImageStyleConfig()
-        const { per: scalePer, min: minScale, value } = imageStyleConfig.scale
-        let scale = parseNumber(value - scalePer)
+        const { per: perScale, min: minScale, value } = imageStyleConfig.scale
+        let scale = parseNumber(value - perScale)
         scale = scale < minScale ? minScale : scale
+        // 还原上一次的移动位置
         this.updateImagePrevTransform({ x: 0, y: 0 })
         let translateX
         let translateY
@@ -591,8 +673,8 @@ class ImageViewerUtil {
     }
 
     private rotate() {
-        const { per: rotatePer, min: minRotate, max: maxRotate, value } = this.config.imageStyle.rotate
-        let rotate = value + rotatePer
+        const { per: perRotate, min: minRotate, max: maxRotate, value } = this.config.imageStyle.rotate
+        let rotate = value + perRotate
         if (rotate >= maxRotate) {
             rotate = minRotate
         }
@@ -650,6 +732,10 @@ class ImageViewerUtil {
         this.updateImageStyleConfig(opts)
     }
 
+    getConfig() {
+        this.getImageStyleConfig()
+    }
+
     preload(url: string) {
         return loadImagePromise(url)
     }
@@ -680,6 +766,15 @@ class ImageViewerUtil {
     setRotate() {
         // 旋转
         this.rotate()
+    }
+
+    // 外层控制缩放比例，如：鼠标捏合事件
+    setScale(scale: number) {
+        if (typeof scale !== 'number' || isNaN(scale)) {
+            return
+        }
+        this.updateScale(scale)
+        this.updateImageTransform({ scale })
     }
 
     destory() {

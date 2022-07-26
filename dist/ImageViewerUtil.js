@@ -168,9 +168,9 @@
 
         this.imageEventY = 0; // 开始拖动图片时，鼠标的位置y
 
-        this.canDragImage = 0; // 鼠标是在图片上，是否可以拖动
+        this.isMouseOverImage = 0; // 鼠标是否在图片上
 
-        this.canMoveImage = 0; // 鼠标是在图片上按下，是否可以移动
+        this.isMouseDownImage = 0; // 鼠标是在图片上按下了
 
         this.keyCodeList = []; // 当前鼠标按下的keyCode
 
@@ -181,22 +181,28 @@
               defaultValue: 1,
               value: 1,
               per: 0.15,
+              // smallPer: 0.15, // 缩小的时候，每次缩放比例
+              // largePer: 0.15, // 放大的时候，每次缩放比例
               min: 0.1,
-              max: 20
+              max: 20,
+              touch: ['mousewheel'] // 默认触发方式
+
             },
             rotate: {
               defaultValue: 0,
               value: 0,
               per: 90,
               min: 0,
-              max: 360
+              max: 360 // 最大交互
+
             },
             translate: {
               x: 0,
               y: 0,
               prevX: 0,
               prevY: 0,
-              touchType: 'mousewheel'
+              touch: ['mousemove'] // 默认触发方式
+
             }
           },
           timeout: 0,
@@ -304,6 +310,52 @@
         }
 
         this.keyCodeList = keyCodeList;
+        this.log(1, "ImageViewerUtil image keydown=".concat(JSON.stringify(keyCodeList)));
+        this.handleImageKeyDownScale(e);
+      };
+
+      ImageViewerUtil.prototype.handleImageKeyDownScale = function (e) {
+        if (!this.isMouseOverImage) {
+          // 必须在图片内
+          return;
+        }
+
+        var touchType = this.getImageStyleConfigTouchType('scale');
+
+        if (touchType.includes('ctrl+arrow')) {
+          // 按住ctrl，在操作上下箭头，进行缩放
+          if (this.isPressDownCtrl() && this.isPressDownArrowUp()) {
+            this.large();
+            return;
+          }
+
+          if (this.isPressDownCtrl() && this.isPressDownArrowDown()) {
+            this.small();
+            return;
+          }
+        } else if (touchType.includes('shift+arrow')) {
+          // 按住shift，在操作上下箭头，进行缩放
+          if (this.isPressDownShift() && this.isPressDownArrowUp()) {
+            this.large();
+            return;
+          }
+
+          if (this.isPressDownShift() && this.isPressDownArrowDown()) {
+            this.small();
+            return;
+          }
+        } else if (touchType.includes('alt+arrow')) {
+          // 按住alt，在操作上下箭头，进行缩放
+          if (this.isPressDownAlt() && this.isPressDownArrowUp()) {
+            this.large();
+            return;
+          }
+
+          if (this.isPressDownAlt() && this.isPressDownArrowDown()) {
+            this.small();
+            return;
+          }
+        }
       };
 
       ImageViewerUtil.prototype.handleImageKeyUp = function (e) {
@@ -336,6 +388,16 @@
         return this.keyCodeList.includes(18);
       };
 
+      ImageViewerUtil.prototype.isPressDownArrowUp = function () {
+        // 是否按下了↑键
+        return this.keyCodeList.includes(38);
+      };
+
+      ImageViewerUtil.prototype.isPressDownArrowDown = function () {
+        // 是否按下了↓键
+        return this.keyCodeList.includes(40);
+      };
+
       ImageViewerUtil.prototype.isPressDownCtrlShift = function () {
         // 是否按下了ctrl+shift键
         return this.isPressDownCtrl() && this.isPressDownShift();
@@ -346,16 +408,28 @@
         return this.isPressDownCtrl() && this.isPressDownAlt();
       };
 
+      ImageViewerUtil.prototype.getImageStyleConfigTouchType = function (key) {
+        var imageStyleConfig = this.getImageStyleConfig();
+        var attr = imageStyleConfig[key];
+
+        if (!attr) {
+          return [];
+        }
+
+        var touchType = (attr === null || attr === void 0 ? void 0 : attr.touch) || [];
+        touchType = Object.prototype.toString.call(touchType) === '[object Array]' ? touchType : [];
+        return touchType;
+      };
+
       ImageViewerUtil.prototype.handleImageMousewheel = function (e) {
         var _this = this;
 
-        if ((e === null || e === void 0 ? void 0 : e.target) !== this.imageNode) {
+        if (!this.isMouseOverImage) {
           // 必须在图片内滚动滚轮
           return;
         }
 
-        var imageStyleConfig = this.getImageStyleConfig();
-        var translate = imageStyleConfig.translate;
+        var touchType = this.getImageStyleConfigTouchType('scale');
 
         var traslateImage = function traslateImage(e) {
           if (e.wheelDelta >= 1) {
@@ -367,58 +441,47 @@
           }
         };
 
-        switch (translate.touchType) {
-          case 'mousewheel':
+        if (touchType.includes('mousewheel')) {
+          traslateImage(e);
+        } else if (touchType.includes('ctrl+mousewheel')) {
+          if (this.isPressDownCtrl()) {
+            // 鼠标按下ctrl键，滚动滚轮，缩放图片
             traslateImage(e);
-            break;
-
-          case 'shift+mousewheel':
-            if (this.isPressDownShift()) {
-              // 鼠标按下shift键，滚动滚轮，缩放图片
-              traslateImage(e);
-            }
-
-            break;
-
-          case 'alt+mousewheel':
-            if (this.isPressDownAlt()) {
-              traslateImage(e);
-            }
-
-            break;
-
-          case 'ctrl+shift+mousewheel':
-            if (this.isPressDownCtrlShift()) {
-              traslateImage(e);
-            }
-
-            break;
-
-          case 'ctrl+alt+mousewheel':
-            if (this.isPressDownCtrlAlt()) {
-              traslateImage(e);
-            }
-
-            break;
-
-          default:
+          }
+        } else if (touchType.includes('shift+mousewheel')) {
+          if (this.isPressDownShift()) {
+            // 鼠标按下shift键，滚动滚轮，缩放图片
             traslateImage(e);
-            break;
+          }
+        } else if (touchType.includes('alt+mousewheel')) {
+          if (this.isPressDownAlt()) {
+            traslateImage(e);
+          }
+        } else if (touchType.includes('ctrl+shift+mousewheel')) {
+          if (this.isPressDownCtrlShift()) {
+            traslateImage(e);
+          }
+        } else if (touchType.includes('ctrl+alt+mousewheel')) {
+          if (this.isPressDownCtrlAlt()) {
+            traslateImage(e);
+          }
+        } else {
+          traslateImage(e);
         }
       };
 
       ImageViewerUtil.prototype.handleImageMouseOver = function (e) {
-        this.canDragImage = 1;
+        this.isMouseOverImage = 1;
       };
 
       ImageViewerUtil.prototype.handleImageMouseLeave = function (e) {
         e.preventDefault();
-        this.canDragImage = 0;
+        this.isMouseOverImage = 0;
       };
 
       ImageViewerUtil.prototype.handleImageMouseDown = function (e) {
-        if (this.canDragImage) {
-          this.canMoveImage = 1;
+        if (this.isMouseOverImage) {
+          this.isMouseDownImage = 1;
           var event = window.event;
           this.imageEventX = event.x;
           this.imageEventY = event.y;
@@ -434,7 +497,7 @@
       ImageViewerUtil.prototype.handleImageMouseMove = function (e) {
         e.preventDefault();
 
-        if (this.canMoveImage) {
+        if (this.isMouseDownImage) {
           var event = window.event;
           var eventX = event.x;
           var eventY = event.y;
@@ -473,7 +536,7 @@
       };
 
       ImageViewerUtil.prototype.handleImageMouseUp = function (e) {
-        this.canMoveImage = 0;
+        this.isMouseDownImage = 0;
       };
 
       ImageViewerUtil.prototype.updateDOMNode = function (params) {
@@ -499,12 +562,23 @@
         }
 
         var perScale = opts.perScale,
+            perSmallScale = opts.perSmallScale,
+            perLargeScale = opts.perLargeScale,
             minScale = opts.minScale,
-            maxScale = opts.maxScale;
+            maxScale = opts.maxScale,
+            scaleTouch = opts.scaleTouch;
         var imageStyleConfig = this.getImageStyleConfig();
 
         if (typeof perScale === 'number' && !isNaN(perScale)) {
           imageStyleConfig.scale.per = perScale;
+        }
+
+        if (typeof perSmallScale === 'number' && !isNaN(perSmallScale)) {
+          imageStyleConfig.scale.smallPer = perSmallScale;
+        }
+
+        if (typeof perLargeScale === 'number' && !isNaN(perLargeScale)) {
+          imageStyleConfig.scale.largePer = perLargeScale;
         }
 
         if (typeof minScale === 'number' && typeof maxScale === 'number') {
@@ -519,6 +593,10 @@
 
         if (typeof maxScale === 'number' && !isNaN(maxScale)) {
           imageStyleConfig.scale.max = maxScale;
+        }
+
+        if (Object.prototype.toString.call(scaleTouch) === '[object Array]') {
+          imageStyleConfig.scale.touch = scaleTouch;
         }
       };
 
@@ -556,11 +634,11 @@
           return;
         }
 
-        var translateTouchType = opts.translateTouchType;
+        var translateTouch = opts.translateTouch;
         var imageStyleConfig = this.getImageStyleConfig();
 
-        if (typeof translateTouchType === 'string') {
-          imageStyleConfig.translate.touchType = translateTouchType;
+        if (Object.prototype.toString.call(translateTouch) === '[object Array]') {
+          imageStyleConfig.translate.touch = translateTouch;
         }
       };
 
@@ -597,11 +675,12 @@
       ImageViewerUtil.prototype.large = function () {
         var imageStyleConfig = this.getImageStyleConfig();
         var _a = imageStyleConfig.scale,
-            scalePer = _a.per,
+            perScale = _a.per,
             maxScale = _a.max,
             value = _a.value;
-        var scale = parseNumber(value + scalePer);
-        scale = scale > maxScale ? maxScale : scale;
+        var scale = parseNumber(value + perScale);
+        scale = scale > maxScale ? maxScale : scale; // 还原上一次的移动位置
+
         this.updateImagePrevTransform({
           x: 0,
           y: 0
@@ -615,11 +694,12 @@
       ImageViewerUtil.prototype.small = function () {
         var imageStyleConfig = this.getImageStyleConfig();
         var _a = imageStyleConfig.scale,
-            scalePer = _a.per,
+            perScale = _a.per,
             minScale = _a.min,
             value = _a.value;
-        var scale = parseNumber(value - scalePer);
-        scale = scale < minScale ? minScale : scale;
+        var scale = parseNumber(value - perScale);
+        scale = scale < minScale ? minScale : scale; // 还原上一次的移动位置
+
         this.updateImagePrevTransform({
           x: 0,
           y: 0
@@ -677,11 +757,11 @@
 
       ImageViewerUtil.prototype.rotate = function () {
         var _a = this.config.imageStyle.rotate,
-            rotatePer = _a.per,
+            perRotate = _a.per,
             minRotate = _a.min,
             maxRotate = _a.max,
             value = _a.value;
-        var rotate = value + rotatePer;
+        var rotate = value + perRotate;
 
         if (rotate >= maxRotate) {
           rotate = minRotate;
@@ -751,6 +831,10 @@
         this.updateImageStyleConfig(opts);
       };
 
+      ImageViewerUtil.prototype.getConfig = function () {
+        this.getImageStyleConfig();
+      };
+
       ImageViewerUtil.prototype.preload = function (url) {
         return loadImagePromise(url);
       };
@@ -789,6 +873,18 @@
       ImageViewerUtil.prototype.setRotate = function () {
         // 旋转
         this.rotate();
+      }; // 外层控制缩放比例，如：鼠标捏合事件
+
+
+      ImageViewerUtil.prototype.setScale = function (scale) {
+        if (typeof scale !== 'number' || isNaN(scale)) {
+          return;
+        }
+
+        this.updateScale(scale);
+        this.updateImageTransform({
+          scale: scale
+        });
       };
 
       ImageViewerUtil.prototype.destory = function () {
