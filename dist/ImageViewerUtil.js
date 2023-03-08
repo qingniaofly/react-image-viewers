@@ -793,11 +793,11 @@
               timeout = _b === void 0 ? 0 : _b;
 
           var fn = function fn() {
-            typeof onLoad === 'function' && onLoad(image);
-
             _this.updateImageUrl(url);
 
             _this.updateImage(image);
+
+            typeof onLoad === 'function' && onLoad(image);
           };
 
           if (typeof timeout === 'number') {

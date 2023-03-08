@@ -695,9 +695,9 @@ class ImageViewerUtil {
             .then((image: any) => {
                 const { onLoad, timeout = 0 } = this.config
                 const fn = () => {
-                    typeof onLoad === 'function' && onLoad(image as HTMLImageElement)
                     this.updateImageUrl(url)
                     this.updateImage(image)
+                    typeof onLoad === 'function' && onLoad(image as HTMLImageElement)
                 }
                 if (typeof timeout === 'number') {
                     setTimeout(fn, timeout)

@@ -1,6 +1,6 @@
 {
   "name": "react-image-viewers",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "a native js imageViewerUtil and react image viewer",
   "main": "lib/cjs/index.js",
   "module": "lib/esm/index.js",
