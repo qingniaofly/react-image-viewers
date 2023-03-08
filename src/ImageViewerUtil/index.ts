@@ -1,4 +1,7 @@
 function registerEvent(dom, name: string, fn) {
+    if(!dom){
+        return
+    }
     if (dom.attachEvent) {
         dom.attachEvent('on' + name, fn)
     } else {
@@ -7,6 +10,9 @@ function registerEvent(dom, name: string, fn) {
 }
 
 function unregisterEvent(dom, name: string, fn) {
+    if(!dom){
+        return
+    }
     if (dom.detachEvent) {
         dom.detachEvent('on' + name, fn)
     } else {
@@ -778,9 +784,9 @@ class ImageViewerUtil {
     }
 
     destory() {
+        this.unbindEvent()
         this.imageContainerNode = null
         this.imageNode = null
-        this.unbindEvent()
     }
 }
 export default ImageViewerUtil

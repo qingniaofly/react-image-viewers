@@ -9,6 +9,10 @@
     var React__default = /*#__PURE__*/_interopDefaultLegacy(React);
 
     function registerEvent(dom, name, fn) {
+      if (!dom) {
+        return;
+      }
+
       if (dom.attachEvent) {
         dom.attachEvent('on' + name, fn);
       } else {
@@ -17,6 +21,10 @@
     }
 
     function unregisterEvent(dom, name, fn) {
+      if (!dom) {
+        return;
+      }
+
       if (dom.detachEvent) {
         dom.detachEvent('on' + name, fn);
       } else {
@@ -892,9 +900,9 @@
       };
 
       ImageViewerUtil.prototype.destory = function () {
+        this.unbindEvent();
         this.imageContainerNode = null;
         this.imageNode = null;
-        this.unbindEvent();
       };
 
       return ImageViewerUtil;
