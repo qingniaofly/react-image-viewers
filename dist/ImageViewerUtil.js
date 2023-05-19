@@ -375,7 +375,7 @@
       };
 
       ImageViewerUtil.prototype.handleImageWindowResize = function (e) {
-        this.updateImagePrevTransform({
+        this.updateImageTransformPrevXY({
           x: 0,
           y: 0
         });
@@ -495,7 +495,7 @@
           this.imageEventY = event.y;
           var imageStyleConfig = this.getImageStyleConfig();
           var translate = imageStyleConfig.translate;
-          this.updateImagePrevTransform({
+          this.updateImageTransformPrevXY({
             x: translate.x,
             y: translate.y
           });
@@ -667,13 +667,33 @@
         styleUtil.updateTransform(this.imageNode, opts);
       };
 
-      ImageViewerUtil.prototype.updateImagePrevTransform = function (_a) {
+      ImageViewerUtil.prototype.updateImageTransformPrevXY = function (_a) {
         var x = _a.x,
             y = _a.y;
         var imageStyleConfig = this.getImageStyleConfig();
         var translate = imageStyleConfig.translate;
         translate.prevX = x;
         translate.prevY = y;
+      };
+
+      ImageViewerUtil.prototype.updateImageTransformXY = function (_a) {
+        var x = _a.x,
+            y = _a.y;
+        var imageStyleConfig = this.getImageStyleConfig();
+        var translate = imageStyleConfig.translate;
+        translate.x = x;
+        translate.y = y;
+      };
+
+      ImageViewerUtil.prototype.resetImageTransformXY = function () {
+        this.updateImageTransformXY({
+          x: 0,
+          y: 0
+        });
+        this.updateImageTransformPrevXY({
+          x: 0,
+          y: 0
+        });
       };
 
       ImageViewerUtil.prototype.getImageStyleConfig = function () {
@@ -689,7 +709,7 @@
         var scale = parseNumber(value + perScale);
         scale = scale > maxScale ? maxScale : scale; // 还原上一次的移动位置
 
-        this.updateImagePrevTransform({
+        this.updateImageTransformPrevXY({
           x: 0,
           y: 0
         });
@@ -708,7 +728,7 @@
         var scale = parseNumber(value - perScale);
         scale = scale < minScale ? minScale : scale; // 还原上一次的移动位置
 
-        this.updateImagePrevTransform({
+        this.updateImageTransformPrevXY({
           x: 0,
           y: 0
         });
@@ -755,6 +775,7 @@
         this.updateScale(scale);
         var rotate = imageStyleConfig.rotate.defaultValue;
         this.updateRotate(rotate);
+        this.resetImageTransformXY();
         this.updateImageTransform({
           scale: scale,
           translateX: 0,

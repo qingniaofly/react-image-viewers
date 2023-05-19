@@ -358,7 +358,7 @@ class ImageViewerUtil {
     }
 
     private handleImageWindowResize(e) {
-        this.updateImagePrevTransform({ x: 0, y: 0 })
+        this.updateImageTransformPrevXY({ x: 0, y: 0 })
     }
 
     private isPressDownShift() {
@@ -469,7 +469,7 @@ class ImageViewerUtil {
             this.imageEventY = event.y
             const imageStyleConfig = this.getImageStyleConfig()
             const { translate } = imageStyleConfig
-            this.updateImagePrevTransform({ x: translate.x, y: translate.y })
+            this.updateImageTransformPrevXY({ x: translate.x, y: translate.y })
         }
     }
 
@@ -610,11 +610,23 @@ class ImageViewerUtil {
         styleUtil.updateTransform(this.imageNode, opts)
     }
 
-    private updateImagePrevTransform({ x, y }) {
+    private updateImageTransformPrevXY({ x, y }) {
         const imageStyleConfig = this.getImageStyleConfig()
         const { translate } = imageStyleConfig
         translate.prevX = x
         translate.prevY = y
+    }
+
+    private updateImageTransformXY({ x, y }) {
+        const imageStyleConfig = this.getImageStyleConfig()
+        const { translate } = imageStyleConfig
+        translate.x = x
+        translate.y = y
+    }
+
+    private resetImageTransformXY() {
+        this.updateImageTransformXY({ x: 0, y: 0 })
+        this.updateImageTransformPrevXY({ x: 0, y: 0 })
     }
 
     private getImageStyleConfig() {
@@ -627,7 +639,7 @@ class ImageViewerUtil {
         let scale = parseNumber(value + perScale)
         scale = scale > maxScale ? maxScale : scale
         // 还原上一次的移动位置
-        this.updateImagePrevTransform({ x: 0, y: 0 })
+        this.updateImageTransformPrevXY({ x: 0, y: 0 })
         this.updateScale(scale)
         this.updateImageTransform({ scale })
     }
@@ -638,7 +650,7 @@ class ImageViewerUtil {
         let scale = parseNumber(value - perScale)
         scale = scale < minScale ? minScale : scale
         // 还原上一次的移动位置
-        this.updateImagePrevTransform({ x: 0, y: 0 })
+        this.updateImageTransformPrevXY({ x: 0, y: 0 })
         let translateX
         let translateY
         if (scale < 1) {
@@ -675,6 +687,7 @@ class ImageViewerUtil {
         this.updateScale(scale)
         const rotate = imageStyleConfig.rotate.defaultValue
         this.updateRotate(rotate)
+        this.resetImageTransformXY()
         this.updateImageTransform({ scale, translateX: 0, translateY: 0, rotate })
     }
 
